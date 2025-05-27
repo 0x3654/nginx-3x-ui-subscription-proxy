@@ -1,10 +1,29 @@
 # nginx-3x-ui-subscription-proxy
 
+This is a fork of [apa4h/nginx-3x-ui-subscription-proxy](https://github.com/apa4h/nginx-3x-ui-subscription-proxy) with the following improvements:
+
+- Added support for subscription statistics aggregation (upload, download, total, expire)
+- Added support for Profile-Title and Profile-Update-Interval headers
+
+## Header Processing
+
+The proxy processes and aggregates the following headers from 3x-UI servers:
+
+### Subscription-Userinfo
+Aggregates statistics from all servers:
+- `upload`: Sum of upload traffic from all servers
+- `download`: Sum of download traffic from all servers
+- `total`: Minimum total quota from all servers (to ensure the client doesn't exceed any server's limit)
+- `expire`: Minimum expiration time from all servers (to ensure the client doesn't use expired subscription)
+
+### Profile Headers
+Takes the first available value from servers:
+- `Profile-Title`: Profile name from the first server that provides it
+- `Profile-Update-Interval`: Update interval from the first server that provides it
+
 🇷🇺 [Русская версия README](README_RU.md)
 
 A reverse proxy configuration for Nginx to dynamically handle and aggregate [3x-UI](https://github.com/MHSanaei/3x-ui?tab=readme-ov-file) subscriptions from multiple servers.
-
-Конфигурация Nginx для объединения подписок с нескольких серверов [3x-UI](https://github.com/MHSanaei/3x-ui?tab=readme-ov-file).
 
 ### Flow
 [![Flow](https://i.postimg.cc/pX59gV8h/temp-Image1-Z8b-SK.avif)](https://postimg.cc/8jDPvSZN)
