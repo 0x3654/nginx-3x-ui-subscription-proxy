@@ -20,16 +20,22 @@ COPY nginx.conf.esh /usr/local/openresty/nginx/conf/
 
 # Устанавливаем esh
 RUN apk upgrade && apk add --no-cache \
-    esh
+    esh git
+
+RUN git clone https://github.com/ledgetech/lua-resty-http.git && \
+    mkdir -p /usr/local/share/lua/5.1/resty && \
+    mv lua-resty-http/lib/resty/* /usr/local/share/lua/5.1/resty/ && \
+    rm -rf lua-resty-http
 
 # Устанавливаем Lua-библиотеку resty-http
-RUN luarocks install lua-resty-http
+#RUN luarocks install lua-resty-http
 
 # Копируем конфигурацию Lua
 COPY config_fetcher.lua /etc/nginx/lua/
 
 # Устанавливаем права на файлы
-RUN chmod -R 755 /usr/local/openresty/nginx/conf/
+RUN chmod -R 755 /usr/local/openresty/nginx/conf/ && \
+    chmod -R 755 /etc/nginx/lua/
 
 # Запускаем nginx со своей конфигурацией
 CMD ["/bin/sh", "-c", "esh -o /usr/local/openresty/nginx/conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf.esh && exec nginx -g 'daemon off;'"]
