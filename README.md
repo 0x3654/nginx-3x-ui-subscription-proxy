@@ -4,7 +4,8 @@ This is a fork of [apa4h/nginx-3x-ui-subscription-proxy](https://github.com/apa4
 
 - Added support for subscription statistics aggregation (upload, download, total, expire)
 - Added support for Profile-Title and Profile-Update-Interval headers
-
+- Fix for luarocks error “main function has more than 65536 constants” by cloning repo and moving files manually
+  
 ## Header Processing
 
 The proxy processes and aggregates the following headers from 3x-UI servers:
