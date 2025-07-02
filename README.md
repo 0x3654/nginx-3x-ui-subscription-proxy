@@ -46,10 +46,11 @@ git clone https://github.com/apa4h/nginx-3x-ui-subscription-proxy.git
 cd nginx-3x-ui-subscription-proxy
 ```
 
-### 2. Copy the Environment File
-```bash
-cp .env.template .env
-```
+>### 2. Copy the Environment File
+>```bash
+>cp .env.template .env
+>```
+> *This step can be skipped*
 
 ### 3. Configure Environment Variables
 Edit the `.env` file and fill in the following variables with your own data:

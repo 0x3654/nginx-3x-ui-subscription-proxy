@@ -46,11 +46,12 @@ git clone https://github.com/apa4h/nginx-3x-ui-subscription-proxy.git
 cd nginx-3x-ui-subscription-proxy
 ```
 
-### 2. Копирование файла конфигурации окружения
+>### 2. Копирование файла конфигурации окружения
 
-```bash
-cp .env.template .env
-```
+>```bash
+>cp .env.template .env
+>```
+> *Этот шаг можно пропустить*
 
 ### 3. Настройка переменных окружения
 
