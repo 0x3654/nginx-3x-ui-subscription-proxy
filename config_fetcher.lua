@@ -32,41 +32,42 @@ for _, base_url in ipairs(servers) do
         ssl_verify = false,  -- Параметр для пропуска проверки SSL-сертификатов (если необходимо)
     })
 
-if res and res.status == 200 then
-    -- Обрабатываем статистику
-    local userinfo = res.headers["Subscription-Userinfo"]
-    if userinfo then
-        local upload = tonumber(string.match(userinfo, "upload=(%d+)"))
-        local download = tonumber(string.match(userinfo, "download=(%d+)"))
-        local total = tonumber(string.match(userinfo, "total=(%d+)"))
-        local expire = tonumber(string.match(userinfo, "expire=(%d+)"))
-        
-        if upload then total_upload = total_upload + upload end
-        if download then total_download = total_download + download end
-        if total then
-            total_quota = total_quota == 0 and total or math.min(total_quota, total)
+    if res and res.status == 200 then
+        -- Обрабатываем статистику
+        local userinfo = res.headers["Subscription-Userinfo"]
+        if userinfo then
+            local upload = tonumber(string.match(userinfo, "upload=(%d+)"))
+            local download = tonumber(string.match(userinfo, "download=(%d+)"))
+            local total = tonumber(string.match(userinfo, "total=(%d+)"))
+            local expire = tonumber(string.match(userinfo, "expire=(%d+)"))
+            
+            if upload then total_upload = total_upload + upload end
+            if download then total_download = total_download + download end
+            if total then
+                total_quota = total_quota == 0 and total or math.min(total_quota, total)
+            end
+            if expire then
+                expire_time = expire_time == 0 and expire or math.min(expire_time, expire)
+            end
         end
-        if expire then
-            expire_time = expire_time == 0 and expire or math.min(expire_time, expire)
+
+        if not profile_title and res.headers["Profile-Title"] then
+            profile_title = res.headers["Profile-Title"]
         end
-    end
 
-    if not profile_title and res.headers["Profile-Title"] then
-        profile_title = res.headers["Profile-Title"]
-    end
+        if not update_interval and res.headers["Profile-Update-Interval"] then
+            update_interval = res.headers["Profile-Update-Interval"]
+        end
 
-    if not update_interval and res.headers["Profile-Update-Interval"] then
-        update_interval = res.headers["Profile-Update-Interval"]
-    end
-
-    local decoded_config = ngx.decode_base64(res.body)
-    if decoded_config then
-        table.insert(configs, decoded_config)
+        local decoded_config = ngx.decode_base64(res.body)
+        if decoded_config then
+            table.insert(configs, decoded_config)
+        else
+            ngx.log(ngx.ERR, "Failed to decode base64 from ", url)
+        end
     else
-        ngx.log(ngx.ERR, "Failed to decode base64 from ", url)
+        ngx.log(ngx.ERR, "Error fetching from ", url, ": ", err or "unknown error")
     end
-else
-    ngx.log(ngx.ERR, "Error fetching from ", url, ": ", err or "unknown error")
 end
 
 -- Возвращаем объединённые конфигурации клиенту
