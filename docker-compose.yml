@@ -1,7 +1,7 @@
-version: "3.8"
 services:
   nginx:
     image: ghcr.io/0x3654/nginx-3x-ui-subscription-proxy:latest
+    pull_policy: always
     container_name: nginx_proxy_sub
     env_file:
       - .env
