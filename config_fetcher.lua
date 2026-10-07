@@ -75,10 +75,11 @@ for _, base_url in ipairs(servers) do
             else
                 ngx.log(ngx.ERR, "Failed to decode base64 from ", url)
             end
-        end
-        -- should be ok for 3x-ui
-        if res.status == ngx.HTTP_BAD_REQUEST then
+        elseif res.status == ngx.HTTP_BAD_REQUEST or res.status == ngx.HTTP_NOT_FOUND then
+            -- 3x-ui: неизвестный sub_id — 400 в v3.0.x, 404 после рефакторинга сабов в v3.4
             ngx.log(ngx.WARN, "No such client on ", url)
+        else
+            ngx.log(ngx.WARN, "Unexpected status ", res.status, " from ", url)
         end
     else
         ngx.log(ngx.ERR, "Error fetching from ", url, ": ", err or "unknown error")
