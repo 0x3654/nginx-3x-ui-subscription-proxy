@@ -64,4 +64,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
+    import os
+    import ssl
+
+    server = ThreadingHTTPServer(("0.0.0.0", 8080), Handler)
+    cert, key = os.environ.get("TLS_CERT"), os.environ.get("TLS_KEY")
+    if cert and key:
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(cert, key)
+        server.socket = ctx.wrap_socket(server.socket, server_side=True)
+    server.serve_forever()

@@ -13,6 +13,12 @@ http {
 
     resolver local=on valid=5s ipv6=off;
 
+    # lua cosocket TLS-верификация не использует системный бандл сама —
+    # без этой директивы VERIFY_UPSTREAM_TLS=on падает с "unable to get
+    # local issuer certificate" на валидных сертификатах
+    lua_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+    lua_ssl_verify_depth 3;
+
     server {
         # Включение или отключение TLS
         <% if [ "$TLS_MODE" != "off" ]; then -%>
