@@ -114,6 +114,21 @@ fast=$(awk -v t="$elapsed" 'BEGIN { print (t < 8) ? "yes" : "no" }')
 assert_eq "failed fast (took ${elapsed}s)" "$fast" "yes"
 px_stop dead
 
+echo "== case 7: parallel fetch — hangers must overlap, not add up"
+px par 9007 "http://$UP:8080/s/hang/ http://$UP:8080/s/ok1/ http://$UP:8080/s/hang/"
+fetch par 9007 testuser
+assert_eq "status" "$status" "200"
+assert_eq "survivor config only" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
+par=$(awk -v t="$elapsed" 'BEGIN { print (t < 3.5) ? "yes" : "no" }')
+assert_eq "two 2s-hangers finished within 3.5s (took ${elapsed}s — sequential would be >4s)" "$par" "yes"
+px_stop par
+
+echo "== case 8: healthz endpoint"
+px hz 9008 "http://$UP:8080/s/ok1/"
+hz=$(curl -s "http://127.0.0.1:9008/healthz")
+assert_eq "healthz body" "$hz" "ok"
+px_stop hz
+
 echo
 echo "== result: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

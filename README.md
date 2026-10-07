@@ -10,9 +10,11 @@
 >
 > - Added support for subscription statistics aggregation (upload, download, total, expire)
 > - Added support for Profile-Title, Profile-Update-Interval and Announce headers
-> - Per-server request timeout (2 s): a hung or dead upstream no longer stalls the client — the proxy answers with the remaining configs
+> - Per-server request timeout (2 s, `FETCH_TIMEOUT_MS`): a hung or dead upstream no longer stalls the client — the proxy answers with the remaining configs
+> - All upstreams are fetched in parallel — total latency is the slowest server, not the sum of all
 > - A subscription missing on one server (3x-ui returns 400 on v3.0, 404 since v3.4) is a warning, not an error
-> - Warn-level logs on stderr (`error_log /dev/stderr warn`) and a docker-based smoke test suite (`tests/run.sh`)
+> - Upstream TLS verification on by default (`VERIFY_UPSTREAM_TLS=off` to restore the old behaviour)
+> - Warn-level logs on stderr (`error_log /dev/stderr warn`), `/healthz` endpoint, docker-based smoke test suite (`tests/run.sh`)
 > - Fixed expire=0 handling (treats as unlimited)
 > - Uses local DNS resolver instead of hardcoded Docker DNS
 
@@ -43,7 +45,7 @@ Takes the first available value from servers:
 - `Announce`: announcement text (base64-prefixed, as sent by 3x-ui; recognized by Happ and v2raytun)
 
 ### Resilience
-- Each upstream request is capped at 2 s (connect+send+read); timeouts and errors on one server never block the others.
+- Upstreams are fetched in parallel, each capped at `FETCH_TIMEOUT_MS` (2 s by default); a timeout or error on one server never blocks the others.
 - Unknown sub id on an upstream (400/404) is logged as a warning and skipped — the merge continues.
 - Any other unexpected upstream status is logged as a warning too; the proxy returns `502` only when no server yielded a config.
 
@@ -125,6 +127,8 @@ Edit the `.env` file and fill in the following variables:
 | `SITE_PORT` | Port number where Nginx will listen for requests (e.g., `443`). |
 | `SERVERS` | List of 3x-UI server URLs to aggregate subscriptions from (e.g., `https://server1.com/sub/ https://server2.com/sub/`). |
 | `SUB` | Static part of the subscription path (e.g., `sub`). |
+| `FETCH_TIMEOUT_MS` | Per-upstream request budget (connect+send+read), milliseconds. Default: `2000`. |
+| `VERIFY_UPSTREAM_TLS` | Verify upstream TLS certificates. Default: `on`; set `off` for self-signed certs. |
 
 ### Subscription URL Format
 
@@ -234,9 +238,11 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 >
 > - Добавлена поддержка агрегации статистики подписок (upload, download, total, expire)
 > - Добавлена поддержка заголовков Profile-Title, Profile-Update-Interval и Announce
-> - Таймаут 2 с на запрос к апстриму: зависший или мёртвый сервер больше не валит клиента — прокси отвечает оставшимися конфигами
+> - Таймаут 2 с на запрос к апстриму (`FETCH_TIMEOUT_MS`): зависший или мёртвый сервер больше не валит клиента — прокси отвечает оставшимися конфигами
+> - Апстримы опрашиваются параллельно — итоговая задержка равна самому медленному, а не сумме всех
 > - Отсутствие подписки на одном из серверов (3x-ui отдаёт 400 на v3.0, 404 начиная с v3.4) — предупреждение, а не ошибка
-> - WARN-логи в stderr (`error_log /dev/stderr warn`) и docker-тестсьют (`tests/run.sh`)
+> - Проверка TLS-сертификатов апстримов включена по умолчанию (`VERIFY_UPSTREAM_TLS=off` для самоподписанных)
+> - WARN-логи в stderr (`error_log /dev/stderr warn`), эндпоинт `/healthz`, docker-тестсьют (`tests/run.sh`)
 > - Исправлена обработка expire=0 (трактуется как unlimited)
 > - Используется локальный DNS резолвер вместо хардкода Docker DNS
 
@@ -268,7 +274,7 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 - `Announce`: текст анонса (в base64-префиксом, как шлёт 3x-ui; понимают Happ и v2raytun)
 
 ### Отказоустойчивость
-- На каждый запрос к апстриму — бюджет 2 с (connect+send+read); таймаут или ошибка одного сервера не блокирует остальные.
+- Апстримы опрашиваются параллельно, у каждого бюджет `FETCH_TIMEOUT_MS` (по умолчанию 2 с); таймаут или ошибка одного сервера не блокирует остальные.
 - Неизвестный sub id на апстриме (400/404) — warning в лог, мердж продолжается.
 - Прочие неожиданные статусы апстрима тоже логируются warning'ом; `502` возвращается только если ни один сервер не отдал конфиг.
 
@@ -350,6 +356,8 @@ IMAGE_NAME=nginx-3x-ui-proxy:dev docker compose up -d
 | `SITE_PORT` | Порт, на котором Nginx будет принимать запросы (например, `443`). |
 | `SERVERS` | Список URL серверов 3x-UI, с которых будут агрегироваться подписки (например, `https://server1.com/sub/ https://server2.com/sub/`). |
 | `SUB` | Статическая часть пути подписки для прокси сервера (например, `sub`). |
+| `FETCH_TIMEOUT_MS` | Бюджет на запрос к апстриму (connect+send+read), мс. По умолчанию: `2000`. |
+| `VERIFY_UPSTREAM_TLS` | Проверять TLS-сертификаты апстримов. По умолчанию: `on`; `off` для самоподписанных. |
 
 ### Формат ссылки подписки
 

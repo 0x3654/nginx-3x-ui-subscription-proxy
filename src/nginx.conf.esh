@@ -1,6 +1,8 @@
 worker_processes 1;
 error_log /dev/stderr warn;
 env SERVERS;
+env FETCH_TIMEOUT_MS;
+env VERIFY_UPSTREAM_TLS;
 events {
     worker_connections 1024;
 }
@@ -29,6 +31,12 @@ http {
             set $sub_id $1;
 
             content_by_lua_file /etc/nginx/lua/config_fetcher.lua;
+        }
+
+        # Живой эндпоинт для HEALTHCHECK и мониторинга
+        location = /healthz {
+            access_log off;
+            return 200 "ok\n";
         }
 
         # Заглушка для других запросов
