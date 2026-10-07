@@ -38,7 +38,7 @@ ENV SITE_HOST=localhost \
 
 EXPOSE ${SITE_PORT}/tcp
 
-RUN apk add --no-cache esh tini
+RUN apk add --no-cache esh tini su-exec ca-certificates
 
 # lua-resty-http из deps-стадии
 COPY --from=deps /out/resty/ /usr/local/share/lua/5.1/resty/
@@ -48,17 +48,17 @@ RUN rm /usr/local/openresty/nginx/conf/nginx.conf
 COPY src/nginx.conf.esh /usr/local/openresty/nginx/conf/
 COPY src/config_fetcher.lua /etc/nginx/lua/
 
-# nginx работает целиком от непривилегированного пользователя: pid и temp-файлы
-# в /tmp, порты >=1024 (SITE_PORT<1024 требует запуска с cap_net_bind_service)
+# pid и temp-файлы nginx — в /tmp, чтобы работала непривилегированная ветка
 RUN sed -i 's|^worker_processes 1;|worker_processes 1;\npid /tmp/nginx.pid;|' /usr/local/openresty/nginx/conf/nginx.conf.esh \
     && sed -i 's|^http {|http {\n    client_body_temp_path /tmp/client_body;\n    proxy_temp_path /tmp/proxy;\n    fastcgi_temp_path /tmp/fastcgi;\n    uwsgi_temp_path /tmp/uwsgi;\n    scgi_temp_path /tmp/scgi;\n|' /usr/local/openresty/nginx/conf/nginx.conf.esh \
     && chmod -R 755 /usr/local/openresty/nginx/conf/ /etc/nginx/lua/ \
     && chown -R 65534:65534 /usr/local/openresty/nginx/conf /etc/nginx/lua
-USER 65534
 
-# tini как PID 1 (reaping зомби, корректные сигналы)
+# tini как PID 1 (reaping зомби, корректные сигналы).
+# TLS-режиму master-процессу нужен root для чтения ключей (workers nginx
+# сбрасывает сам); plain HTTP стартует целиком от 65534 через su-exec.
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["/bin/sh", "-c", "esh -o /usr/local/openresty/nginx/conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf.esh && exec nginx -g 'daemon off;'"]
+CMD ["/bin/sh", "-c", "esh -o /usr/local/openresty/nginx/conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf.esh && if [ \"$TLS_MODE\" = \"off\" ]; then chmod 666 /proc/self/fd/1 /proc/self/fd/2; exec su-exec 65534:65534 nginx -g 'daemon off;'; else exec nginx -g 'daemon off;'; fi"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget -q -O /dev/null "http://127.0.0.1:${SITE_PORT}/healthz" || exit 1

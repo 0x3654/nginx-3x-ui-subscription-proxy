@@ -27,6 +27,11 @@ assert_absent() { case "$2" in *"$3"*) bad "$1 — [$3] should not be in [$2]" ;
 echo "==> building image"
 docker build -q -t "$IMG" -f "$DIR/../src/Dockerfile" "$DIR/.." >/dev/null
 
+# VERIFY_UPSTREAM_TLS=on требует CA-бандл в образе — без него все https-апстримы
+# падают с "unable to get local issuer certificate" (инцидент 2026-10-07)
+docker run --rm --entrypoint sh "$IMG" -c 'test -s /etc/ssl/certs/ca-certificates.crt' \
+  && echo "  ok: CA bundle present" || { echo "  FAIL: no CA bundle in image"; exit 1; }
+
 echo "==> starting fake 3x-ui upstream"
 docker network create "$NET" >/dev/null
 docker run -d --rm --name "$UP" --net "$NET" -l subproxy-test=1 \
