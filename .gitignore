@@ -32,3 +32,5 @@ nginx/*.key
 /backend/user_activity.log
 celerybeat-schedule
 *.ansible
+.claude/
+.wip.patch

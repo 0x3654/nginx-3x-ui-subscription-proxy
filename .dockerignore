@@ -1,0 +1,10 @@
+.git
+.github
+.ansible
+.claude
+tests
+dist
+*.md
+docker-compose.yml
+generate-env.sh
+.env*

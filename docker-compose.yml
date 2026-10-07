@@ -1,9 +1,7 @@
 version: "3.8"
 services:
   nginx:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/0x3654/nginx-3x-ui-subscription-proxy:latest
     container_name: nginx_proxy_sub
     env_file:
       - .env
