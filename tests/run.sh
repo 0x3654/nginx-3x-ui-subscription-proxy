@@ -25,7 +25,7 @@ assert_contains() { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 — [$3] not foun
 assert_absent() { case "$2" in *"$3"*) bad "$1 — [$3] should not be in [$2]" ;; *) ok "$1" ;; esac; }
 
 echo "==> building image"
-docker build -q -t "$IMG" -f "$DIR/../Dockerfile" "$DIR/.." >/dev/null
+docker build -q -t "$IMG" -f "$DIR/../src/Dockerfile" "$DIR/.." >/dev/null
 
 echo "==> starting fake 3x-ui upstream"
 docker network create "$NET" >/dev/null
