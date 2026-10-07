@@ -61,4 +61,6 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/bin/sh", "-c", "esh -o /usr/local/openresty/nginx/conf/nginx.conf /usr/local/openresty/nginx/conf/nginx.conf.esh && if [ \"$TLS_MODE\" = \"off\" ]; then chmod 666 /proc/self/fd/1 /proc/self/fd/2; exec su-exec 65534:65534 nginx -g 'daemon off;'; else exec nginx -g 'daemon off;'; fi"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD wget -q -O /dev/null "http://127.0.0.1:${SITE_PORT}/healthz" || exit 1
+    CMD wget -q -O /dev/null "http://127.0.0.1:${SITE_PORT}/healthz" \
+        || wget --no-check-certificate -q -O /dev/null "https://127.0.0.1:${SITE_PORT}/healthz" \
+        || exit 1
