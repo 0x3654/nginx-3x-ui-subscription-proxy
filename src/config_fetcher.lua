@@ -26,6 +26,7 @@ local function fetch_one(url)
         config = nil,
         upload = 0, download = 0, total = 0, expire = 0,
         profile_title = nil, update_interval = nil, announce = nil,
+        support_url = nil, web_page_url = nil,
     }
 
     local httpc = http.new()
@@ -61,6 +62,8 @@ local function fetch_one(url)
         entry.profile_title = res.headers["Profile-Title"]
         entry.update_interval = res.headers["Profile-Update-Interval"]
         entry.announce = res.headers["Announce"]
+        entry.support_url = res.headers["Support-Url"]
+        entry.web_page_url = res.headers["Profile-Web-Page-Url"]
 
         local decoded_config = ngx.decode_base64(res.body)
         if decoded_config then
@@ -104,6 +107,8 @@ local expire_time = 0
 local profile_title = nil
 local update_interval = nil
 local announce = nil
+local support_url = nil
+local web_page_url = nil
 
 for _, entry in ipairs(entries) do
     if entry.config then
@@ -124,6 +129,12 @@ for _, entry in ipairs(entries) do
         end
         if not announce and entry.announce then
             announce = entry.announce
+        end
+        if not support_url and entry.support_url then
+            support_url = entry.support_url
+        end
+        if not web_page_url and entry.web_page_url then
+            web_page_url = entry.web_page_url
         end
     end
 end
@@ -147,6 +158,12 @@ if #configs > 0 then
     end
     if announce then
         ngx.header["Announce"] = announce
+    end
+    if support_url then
+        ngx.header["Support-Url"] = support_url
+    end
+    if web_page_url then
+        ngx.header["Profile-Web-Page-Url"] = web_page_url
     end
 
     -- Устанавливаем агрегированную статистику

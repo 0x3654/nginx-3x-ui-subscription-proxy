@@ -80,6 +80,8 @@ assert_eq "status" "$status" "200"
 assert_eq "merged body" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\nvless://ok2-testuser\n')"
 assert_eq "userinfo aggregated" "$(hget Subscription-Userinfo)" "upload=150; download=350; total=1073741824; expire=1900000000"
 assert_eq "announce passed through" "$(hget Announce)" "base64:$(printf 'Объявление' | base64)"
+assert_eq "support url passed through" "$(hget Support-Url)" "https://example.com/support"
+assert_eq "web page url passed through" "$(hget Profile-Web-Page-Url)" "https://example.com/profile"
 assert_eq "profile title" "$(hget Profile-Title)" "$(printf 'Тест' | base64)"
 assert_eq "update interval" "$(hget Profile-Update-Interval)" "24"
 px_stop both

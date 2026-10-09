@@ -9,7 +9,7 @@
 > This is a fork of [apa4h/nginx-3x-ui-subscription-proxy](https://github.com/apa4h/nginx-3x-ui-subscription-proxy) with the following improvements:
 >
 > - Added support for subscription statistics aggregation (upload, download, total, expire)
-> - Added support for Profile-Title, Profile-Update-Interval and Announce headers
+> - Added support for Profile-Title, Profile-Update-Interval, Announce, Support-Url and Profile-Web-Page-Url headers
 > - Per-server request timeout (2 s, `FETCH_TIMEOUT_MS`): a hung or dead upstream no longer stalls the client — the proxy answers with the remaining configs
 > - All upstreams are fetched in parallel — total latency is the slowest server, not the sum of all
 > - A subscription missing on one server (3x-ui returns 400 on v3.0, 404 since v3.4) is a warning, not an error
@@ -43,6 +43,7 @@ Takes the first available value from servers:
 - `Profile-Title`: Profile name from the first server that provides it
 - `Profile-Update-Interval`: Update interval from the first server that provides it
 - `Announce`: announcement text (base64-prefixed, as sent by 3x-ui; recognized by Happ and v2raytun)
+- `Support-Url` / `Profile-Web-Page-Url`: support link and profile web page, shown by clients as buttons
 
 ### Resilience
 - Upstreams are fetched in parallel, each capped at `FETCH_TIMEOUT_MS` (2 s by default); a timeout or error on one server never blocks the others.
@@ -237,7 +238,7 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 > Это форк проекта [apa4h/nginx-3x-ui-subscription-proxy](https://github.com/apa4h/nginx-3x-ui-subscription-proxy) со следующими улучшениями:
 >
 > - Добавлена поддержка агрегации статистики подписок (upload, download, total, expire)
-> - Добавлена поддержка заголовков Profile-Title, Profile-Update-Interval и Announce
+> - Добавлена поддержка заголовков Profile-Title, Profile-Update-Interval, Announce, Support-Url и Profile-Web-Page-Url
 > - Таймаут 2 с на запрос к апстриму (`FETCH_TIMEOUT_MS`): зависший или мёртвый сервер больше не валит клиента — прокси отвечает оставшимися конфигами
 > - Апстримы опрашиваются параллельно — итоговая задержка равна самому медленному, а не сумме всех
 > - Отсутствие подписки на одном из серверов (3x-ui отдаёт 400 на v3.0, 404 начиная с v3.4) — предупреждение, а не ошибка
@@ -272,6 +273,7 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 - `Profile-Title`: Название профиля от первого сервера, который его предоставляет
 - `Profile-Update-Interval`: Интервал обновления от первого сервера, который его предоставляет
 - `Announce`: текст анонса (в base64-префиксом, как шлёт 3x-ui; понимают Happ и v2raytun)
+- `Support-Url` / `Profile-Web-Page-Url`: ссылка поддержки и веб-страница профиля, клиенты показывают их кнопками
 
 ### Отказоустойчивость
 - Апстримы опрашиваются параллельно, у каждого бюджет `FETCH_TIMEOUT_MS` (по умолчанию 2 с); таймаут или ошибка одного сервера не блокирует остальные.

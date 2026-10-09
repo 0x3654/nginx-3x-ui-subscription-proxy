@@ -55,6 +55,8 @@ class Handler(BaseHTTPRequestHandler):
         if behavior == "ok2":
             self.send_header("Subscription-Userinfo", "upload=50; download=150; total=1073741824; expire=0")
             self.send_header("Announce", "base64:" + b64("Объявление"))
+            self.send_header("Support-Url", "https://example.com/support")
+            self.send_header("Profile-Web-Page-Url", "https://example.com/profile")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload.encode())
