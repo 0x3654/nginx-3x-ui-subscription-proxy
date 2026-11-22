@@ -74,38 +74,41 @@ hget() { printf '%s' "$hdr" | tr -d '\r' | grep -i "^$1:" | head -1 | cut -d' ' 
 
 echo
 echo "== case 1: both servers healthy (merge + aggregate headers)"
-px both 9001 "http://$UP:8080/s/ok1/ http://$UP:8080/s/ok2/"
-fetch both 9001 testuser
+px both 19001 "http://$UP:8080/s/ok1/ http://$UP:8080/s/ok2/"
+fetch both 19001 testuser
 assert_eq "status" "$status" "200"
 assert_eq "merged body" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\nvless://ok2-testuser\n')"
 assert_eq "userinfo aggregated" "$(hget Subscription-Userinfo)" "upload=150; download=350; total=1073741824; expire=1900000000"
 assert_eq "announce passed through" "$(hget Announce)" "base64:$(printf 'Объявление' | base64)"
 assert_eq "support url passed through" "$(hget Support-Url)" "https://example.com/support"
 assert_eq "web page url passed through" "$(hget Profile-Web-Page-Url)" "https://example.com/profile"
+assert_eq "routing rules passed through" "$(hget Routing)" "1,domain:geosite:private"
+assert_eq "routing enable derived from rules" "$(hget Routing-Enable)" "true"
 assert_eq "profile title" "$(hget Profile-Title)" "$(printf 'Тест' | base64)"
 assert_eq "update interval" "$(hget Profile-Update-Interval)" "24"
 px_stop both
 
 echo "== case 2: unknown sub on old 3x-ui (400)"
-px m400 9002 "http://$UP:8080/s/missb/ http://$UP:8080/s/ok1/"
-fetch m400 9002 testuser
+px m400 19002 "http://$UP:8080/s/missb/ http://$UP:8080/s/ok1/"
+fetch m400 19002 testuser
 assert_eq "status" "$status" "200"
 assert_eq "survivor config only" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
 assert_contains "warn in logs" "$(px_logs m400)" "No such client"
 assert_absent "no announce header" "$hdr" "announce"
+assert_absent "no routing headers without rules" "$hdr" "routing"
 px_stop m400
 
 echo "== case 3: unknown sub on new 3x-ui (404)"
-px m404 9003 "http://$UP:8080/s/missn/ http://$UP:8080/s/ok1/"
-fetch m404 9003 testuser
+px m404 19003 "http://$UP:8080/s/missn/ http://$UP:8080/s/ok1/"
+fetch m404 19003 testuser
 assert_eq "status" "$status" "200"
 assert_eq "survivor config only" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
 assert_contains "warn in logs" "$(px_logs m404)" "No such client"
 px_stop m404
 
 echo "== case 4: hanging upstream must not stall the client"
-px hang 9004 "http://$UP:8080/s/ok1/ http://$UP:8080/s/hang/"
-fetch hang 9004 testuser
+px hang 19004 "http://$UP:8080/s/ok1/ http://$UP:8080/s/hang/"
+fetch hang 19004 testuser
 assert_eq "status" "$status" "200"
 assert_eq "survivor config only" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
 assert_contains "timeout logged" "$(px_logs hang)" "timeout"
@@ -114,16 +117,16 @@ assert_eq "responded in <5s (took ${elapsed}s)" "$fast" "yes"
 px_stop hang
 
 echo "== case 5: upstream 500 — warn, serve the rest"
-px e500 9005 "http://$UP:8080/s/err/ http://$UP:8080/s/ok1/"
-fetch e500 9005 testuser
+px e500 19005 "http://$UP:8080/s/err/ http://$UP:8080/s/ok1/"
+fetch e500 19005 testuser
 assert_eq "status" "$status" "200"
 assert_eq "survivor config only" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
 assert_contains "unexpected status logged" "$(px_logs e500)" "Unexpected status 500"
 px_stop e500
 
 echo "== case 6: no working upstream — 502"
-px dead 9006 "http://$UP:8080/s/hang/ http://$UP:8080/s/err/"
-fetch dead 9006 testuser
+px dead 19006 "http://$UP:8080/s/hang/ http://$UP:8080/s/err/"
+fetch dead 19006 testuser
 assert_eq "status" "$status" "502"
 assert_contains "error body" "$body" "No configs available"
 fast=$(awk -v t="$elapsed" 'BEGIN { print (t < 8) ? "yes" : "no" }')
@@ -131,8 +134,8 @@ assert_eq "failed fast (took ${elapsed}s)" "$fast" "yes"
 px_stop dead
 
 echo "== case 7: parallel fetch — hangers must overlap, not add up"
-px par 9007 "http://$UP:8080/s/hang/ http://$UP:8080/s/ok1/ http://$UP:8080/s/hang/"
-fetch par 9007 testuser
+px par 19007 "http://$UP:8080/s/hang/ http://$UP:8080/s/ok1/ http://$UP:8080/s/hang/"
+fetch par 19007 testuser
 assert_eq "status" "$status" "200"
 assert_eq "survivor config only" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
 par=$(awk -v t="$elapsed" 'BEGIN { print (t < 3.5) ? "yes" : "no" }')
@@ -140,8 +143,8 @@ assert_eq "two 2s-hangers finished within 3.5s (took ${elapsed}s — sequential 
 px_stop par
 
 echo "== case 8: healthz endpoint"
-px hz 9008 "http://$UP:8080/s/ok1/"
-hz=$(curl -s "http://127.0.0.1:9008/healthz")
+px hz 19008 "http://$UP:8080/s/ok1/"
+hz=$(curl -s "http://127.0.0.1:19008/healthz")
 assert_eq "healthz body" "$hz" "ok"
 px_stop hz
 
@@ -163,8 +166,8 @@ docker run -d --rm --name "$UP-https" --net "$NET" --network-alias uphttps -l su
   -e TLS_CERT=/srv.crt -e TLS_KEY=/srv.key \
   python:3.12-alpine python /upstream.py >/dev/null
 wait_up "$UP-https"
-px tls 9010 "https://uphttps:8080/s/ok1/" "-v $TMP/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro"
-fetch tls 9010 testuser
+px tls 19010 "https://uphttps:8080/s/ok1/" "-v $TMP/ca.crt:/etc/ssl/certs/ca-certificates.crt:ro"
+fetch tls 19010 testuser
 assert_eq "status" "$status" "200"
 assert_eq "config via verified https" "$(printf '%s' "$body" | base64 -d)" "$(printf 'vless://ok1-testuser\n')"
 px_stop tls
@@ -180,8 +183,8 @@ docker run -d --rm --name "$UP-bad" --net "$NET" --network-alias upbad -l subpro
   -e TLS_CERT=/srv.crt -e TLS_KEY=/srv.key \
   python:3.12-alpine python /upstream.py >/dev/null
 wait_up "$UP-bad"
-px bad 9011 "https://upbad:8080/s/ok1/"
-fetch bad 9011 testuser
+px bad 19011 "https://upbad:8080/s/ok1/"
+fetch bad 19011 testuser
 assert_eq "status" "$status" "502"
 assert_contains "cert failure logged" "$(px_logs bad)" "Error fetching"
 px_stop bad

@@ -26,7 +26,7 @@ local function fetch_one(url)
         config = nil,
         upload = 0, download = 0, total = 0, expire = 0,
         profile_title = nil, update_interval = nil, announce = nil,
-        support_url = nil, web_page_url = nil,
+        support_url = nil, web_page_url = nil, routing = nil,
     }
 
     local httpc = http.new()
@@ -64,6 +64,7 @@ local function fetch_one(url)
         entry.announce = res.headers["Announce"]
         entry.support_url = res.headers["Support-Url"]
         entry.web_page_url = res.headers["Profile-Web-Page-Url"]
+        entry.routing = res.headers["Routing"]
 
         local decoded_config = ngx.decode_base64(res.body)
         if decoded_config then
@@ -109,6 +110,7 @@ local update_interval = nil
 local announce = nil
 local support_url = nil
 local web_page_url = nil
+local routing = nil
 
 for _, entry in ipairs(entries) do
     if entry.config then
@@ -135,6 +137,9 @@ for _, entry in ipairs(entries) do
         end
         if not web_page_url and entry.web_page_url then
             web_page_url = entry.web_page_url
+        end
+        if not routing and entry.routing then
+            routing = entry.routing
         end
     end
 end
@@ -164,6 +169,15 @@ if #configs > 0 then
     end
     if web_page_url then
         ngx.header["Profile-Web-Page-Url"] = web_page_url
+    end
+    -- Happ-маршрутизация («Advanced» в настройках подписки 3x-ui): 3x-ui шлёт
+    -- Routing-Enable всегда (true/false), Routing только при правилах. Пару
+    -- выводим только когда правила есть: явный "false" для клиента равен
+    -- отсутствию заголовка, а при смеси серверов наивный passthrough мог бы
+    -- отдать "false" от первого вместе с правилами от второго.
+    if routing then
+        ngx.header["Routing-Enable"] = "true"
+        ngx.header["Routing"] = routing
     end
 
     -- Устанавливаем агрегированную статистику

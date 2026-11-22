@@ -7,6 +7,7 @@ and the proxy appends the sub id, so the path is /s/<behavior>/<sub_id>.
 
   ok1    200 + Subscription-Userinfo + Profile-Title + Profile-Update-Interval
   ok2    200 + different Userinfo + Announce (base64-prefixed, like 3x-ui)
+         + Support-Url, Profile-Web-Page-Url, Routing-Enable/Routing (Happ)
   missb  400 "Error!"          — 3x-ui v3.0.x unknown sub id
   missn  404                   — 3x-ui v3.4+ unknown sub id
   err    500 "boom"
@@ -57,6 +58,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Announce", "base64:" + b64("Объявление"))
             self.send_header("Support-Url", "https://example.com/support")
             self.send_header("Profile-Web-Page-Url", "https://example.com/profile")
+            # Happ routing («Advanced» в 3x-ui): Enable приходит всегда,
+            # Routing — только при настроенных правилах
+            self.send_header("Routing-Enable", "true")
+            self.send_header("Routing", "1,domain:geosite:private")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload.encode())
