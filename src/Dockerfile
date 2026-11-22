@@ -1,6 +1,19 @@
 # syntax=docker/dockerfile:1
-# Пин минорного тега базового образа (multi-arch manifest)
-ARG OPENRESTY_TAG=1.31.1.1-3-alpine-fat
+# Пин минорного тега базового образа (multi-arch manifest).
+# Slim-вариант: fat тащит gcc/make/perl для сборки модулей, которые нам не
+# нужны (lua-resty-http — чистый Lua, копируется файлами) и распаковывается
+# в ~488 МБ против ~190 МБ у slim. Ядро 1.31.1 -> 1.31.8 закрывает 12 nginx-CVE
+# 2026 года (ноябрьская пачка F5 в их числе):
+#   1.31.2: CVE-2026-42530 (HTTP/3 use-after-free), CVE-2026-42055 (HTTP/2/gRPC
+#           upstream buffer overflow), CVE-2026-48142 (charset overread)
+#   1.31.3: CVE-2026-42533 (map+regex overflow), CVE-2026-60005 (slice/cache
+#           memory disclosure), CVE-2026-56434 (SSI use-after-free)
+#   1.31.6: CVE-2026-90439 (HTTP/3 heap overflow c OpenSSL)
+#   1.31.7: CVE-2026-15176 (alias+rewrite), CVE-2026-93479 (variable eval),
+#           CVE-2026-95101 (HTTP/3 body injection), CVE-2026-97629 (TLS session
+#           ticket forgery), CVE-2026-97205 (AIO/SSI use-after-free)
+# Плюс OpenSSL 3.5.6 -> 3.5.9 и PCRE2 10.47 -> 10.49.
+ARG OPENRESTY_TAG=1.31.8.1-0-alpine
 
 # --- Стадия 1: lint-гейт — синтаксическая проверка lua (фейл = фейл сборки) ---
 FROM openresty/openresty:${OPENRESTY_TAG} AS lint
